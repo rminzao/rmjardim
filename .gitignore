@@ -1,0 +1,32 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Laravel
+site/vendor/
+site/.env
+site/storage/*.key
+site/.phpunit.result.cache
+
+# SQLite
+*.sqlite
+*.sqlite-journal
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WppConnect sessions
+wppapi/tokens/
+wppapi/.wwebjs_auth/
+wppapi/.wwebjs_cache/
+
+# Logs
+*.log
