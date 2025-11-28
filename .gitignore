@@ -1,32 +1,50 @@
-# Node
-node_modules/
-npm-debug.log*
-
 # Laravel
-site/vendor/
-site/.env
-site/storage/*.key
-site/.phpunit.result.cache
+/site/vendor/
+/site/node_modules/
+/site/public/hot
+/site/public/storage
+/site/storage/*.key
+/site/.env
+/site/.env.backup
+/site/.phpunit.result.cache
+/site/Homestead.json
+/site/Homestead.yaml
+/site/npm-debug.log
+/site/yarn-error.log
+/site/.fleet
+/site/.idea
+/site/.vscode
 
-# SQLite
+# Storage Laravel
+/site/storage/framework/cache/*
+/site/storage/framework/sessions/*
+/site/storage/framework/testing/*
+/site/storage/framework/views/*
+/site/storage/logs/*
+!site/storage/framework/.gitignore
+!site/storage/framework/cache/.gitignore
+!site/storage/framework/sessions/.gitignore
+!site/storage/framework/testing/.gitignore
+!site/storage/framework/views/.gitignore
+!site/storage/logs/.gitignore
+
+# Node.js
+/wppapi/node_modules/
+/wppapi/.env
+/wppapi/tokens/
+
+# Arquivos temporários
+test-message.json
+*.log
 *.sqlite
 *.sqlite-journal
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# OS
+# Sistema
 .DS_Store
 Thumbs.db
 
-# WppConnect sessions
-wppapi/tokens/
-wppapi/.wwebjs_auth/
-wppapi/.wwebjs_cache/
+# Backup
+site-backup/
 
-# Logs
-*.log
+# Docker
+docker-compose.override.yml
