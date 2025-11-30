@@ -35,4 +35,7 @@ return [
         ],
     ],
 
+    'wppconnect' => [
+        'url' => env('WPPCONNECT_API_URL', 'http://localhost:3000'),
+    ],
 ];
