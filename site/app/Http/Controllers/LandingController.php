@@ -9,18 +9,24 @@ class LandingController extends Controller
 {
     public function index()
     {
-        // Busca imagens da galeria (ativas, ordenadas)
+        // Busca configurações do site
+        $settings = DB::table('site_settings')
+            ->pluck('value', 'key')
+            ->toArray();
+        
+        // Busca serviços ativos
+        $services = DB::table('services')
+            ->where('is_active', true)
+            ->orderBy('order', 'asc')
+            ->get();
+        
+        // Busca imagens da galeria
         $images = DB::table('gallery_images')
             ->where('is_active', true)
             ->orderBy('order', 'asc')
             ->limit(6)
             ->get();
-
-        // Busca configurações do site
-        $settings = DB::table('site_settings')
-            ->pluck('value', 'key')
-            ->toArray();
-
-        return view('landing', compact('images', 'settings'));
+        
+        return view('landing', compact('settings', 'services', 'images'));
     }
 }
