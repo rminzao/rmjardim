@@ -1,11 +1,28 @@
-# Laravel
+# ==========================================
+# ENVIRONMENT & SECRETS
+# ==========================================
+.env
+.env.*
+!.env.example
+site/.env
+site/.env.backup
+wppapi/.env
+
+# ==========================================
+# DOCKER SENSITIVE DATA
+# ==========================================
+docker-compose.override.yml
+sqlserver_data/
+wppapi_tokens/
+
+# ==========================================
+# LARAVEL
+# ==========================================
 /site/vendor/
 /site/node_modules/
 /site/public/hot
 /site/public/storage
 /site/storage/*.key
-/site/.env
-/site/.env.backup
 /site/.phpunit.result.cache
 /site/Homestead.json
 /site/Homestead.yaml
@@ -28,23 +45,50 @@
 !site/storage/framework/views/.gitignore
 !site/storage/logs/.gitignore
 
-# Node.js
+# ==========================================
+# NODE.JS / WPPAPI
+# ==========================================
 /wppapi/node_modules/
-/wppapi/.env
 /wppapi/tokens/
+node_modules/
 
-# Arquivos temporários
+# ==========================================
+# BACKUPS & TEMPORARY FILES
+# ==========================================
+site-backup/
 test-message.json
 *.log
 *.sqlite
 *.sqlite-journal
+*.swp
+*.swo
+*~
 
-# Sistema
+# ==========================================
+# SYSTEM FILES
+# ==========================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
 
-# Backup
-site-backup/
+# ==========================================
+# IDE / EDITORS
+# ==========================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.fleet/
 
-# Docker
-docker-compose.override.yml
+# ==========================================
+# BUILD ARTIFACTS
+# ==========================================
+/site/public/build/
+/site/public/mix-manifest.json
+/site/public/css/
+/site/public/js/

@@ -1,16 +1,85 @@
 services:
+  # SQL Server (Azure SQL Edge para ARM64)
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/azure-sql-edge:latest
     container_name: rmjardim-sqlserver
+    platform: linux/arm64
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=RmJardim@2024
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
       - MSSQL_PID=Developer
     ports:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "sleep 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
+    networks:
+      - rmjardim-network
+
+  # Laravel PHP Application com Vite
+  laravel:
+    build:
+      context: ./site
+      dockerfile: ../Dockerfile.laravel
+    container_name: rmjardim-laravel
+    working_dir: /var/www
+    user: root
+    volumes:
+      - ./site:/var/www
+      - ./docker-entrypoint-laravel.sh:/docker-entrypoint.sh:ro
+      - laravel_vendor:/var/www/vendor
+      - laravel_node_modules:/var/www/node_modules
+    ports:
+      - "8000:8000"
+      - "5173:5173"
+    environment:
+      - APP_ENV=${APP_ENV}
+      - APP_DEBUG=${APP_DEBUG}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    command: ["/bin/bash", "/docker-entrypoint.sh"]
+    restart: unless-stopped
+    networks:
+      - rmjardim-network
+
+  # WppConnect API
+  wppapi:
+    build:
+      context: ./wppapi
+      dockerfile: ../Dockerfile.wppapi
+    container_name: rmjardim-wppapi
+    working_dir: /app
+    user: root
+    volumes:
+      - ./wppapi:/app
+      - ./docker-entrypoint-wppapi.sh:/docker-entrypoint.sh:ro
+      - wppapi_node_modules:/app/node_modules
+      - wppapi_tokens:/app/tokens
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "
+        chown -R node:node /app/node_modules /app/tokens &&
+        su node -s /bin/sh -c '/bin/bash /docker-entrypoint.sh'
+      "
+    restart: unless-stopped
+    networks:
+      - rmjardim-network
 
 volumes:
   sqlserver_data:
+  laravel_vendor:
+  laravel_node_modules:
+  wppapi_node_modules:
+  wppapi_tokens:
+
+networks:
+  rmjardim-network:
+    driver: bridge
