@@ -36,6 +36,7 @@ return [
     ],
 
     'wppconnect' => [
-        'url' => env('WPPCONNECT_API_URL', 'http://localhost:3000'),
+        'url' => env('WPPCONNECT_URL', 'http://rmjardim-wppapi:3000'),
+        'session' => env('WPPCONNECT_SESSION', 'rmjardim-session'),
     ],
 ];

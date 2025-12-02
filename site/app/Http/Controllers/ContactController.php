@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ContactController extends Controller
 {
@@ -28,19 +29,23 @@ class ContactController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Configurações da API
         $apiUrl = config('services.wppconnect.url');
+        
+        // Buscar número de notificação
         $whatsappNumber = DB::table('site_settings')
             ->where('key', 'whatsapp_notification')
             ->value('value');
-            
+
+        // Enviar notificação para o admin
         try {
             $messageToAdmin = "🌱 *Novo contato - RM Jardim*\n\n"
                 . "👤 *Nome:* {$validated['name']}\n"
                 . "📱 *Telefone:* {$validated['phone']}\n"
                 . "💬 *Mensagem:* {$validated['message']}";
 
-            $response = Http::post($apiUrl . '/send-message', [
-                'phone' => $whatsappNumber,
+            $response = Http::timeout(30)->post("{$apiUrl}/send-message", [
+                'phone' => $this->formatPhone($whatsappNumber),
                 'message' => $messageToAdmin,
             ]);
 
@@ -53,48 +58,37 @@ class ContactController extends Controller
                     ]);
             }
         } catch (\Exception $e) {
-            \Log::error('Erro ao enviar notificação admin: ' . $e->getMessage());
+            Log::error('Erro ao enviar notificação admin: ' . $e->getMessage());
         }
 
-        // msg de boas vindas
+        // Mensagem de boas-vindas ao cliente
         try {
             $firstName = explode(' ', $validated['name'])[0];
-            
             $messageToClient = "Olá *{$firstName}*! 👋🌱\n\n"
                 . "Obrigado por entrar em contato com a *RM Jardim*!\n\n"
-                . "Recebemos sua mensagem e em breve nossa equipe entrará em contato para apresentar nossos serviços e fazer um orçamento personalizado para você.\n\n"
-                . "🌿 Confira alguns dos nossos trabalhos abaixo!\n\n"
-                . "Enquanto isso, fique à vontade para nos chamar aqui no WhatsApp se tiver alguma dúvida!\n\n"
-                . "Atenciosamente,\n"
-                . "*Equipe RM Jardim* 🌱";
+                . "Recebemos sua mensagem e em breve nossa equipe entrará em contato.\n\n"
+                . "Atenciosamente,\n*Equipe RM Jardim* 🌱";
 
-            Http::post($apiUrl . '/send-message', [
-                'phone' => $validated['phone'],
+            Http::timeout(30)->post("{$apiUrl}/send-message", [
+                'phone' => $this->formatPhone($validated['phone']),
                 'message' => $messageToClient,
             ]);
 
-            sleep(2);
-            
-            $publicPath = public_path();
-            
-            Http::timeout(60)->post($apiUrl . '/send-image-file', [
-                'phone' => $validated['phone'],
-                'imagePath' => $publicPath . '/images/image-1.png',
-                'caption' => '🌿 Projeto de paisagismo - Exemplo 1'
-            ]);
-
-            sleep(2);
-
-            Http::timeout(60)->post($apiUrl . '/send-image-file', [
-                'phone' => $validated['phone'],
-                'imagePath' => $publicPath . '/images/image-2.png',
-                'caption' => '🌱 Projeto de jardinagem'
-            ]);
-
         } catch (\Exception $e) {
-            \Log::error('Erro ao enviar mensagem cliente: ' . $e->getMessage());
+            Log::error('Erro ao enviar mensagem cliente: ' . $e->getMessage());
         }
 
         return redirect()->back()->with('success', 'Mensagem enviada com sucesso! Enviamos uma confirmação no seu WhatsApp. Entraremos em contato em breve.');
+    }
+
+    private function formatPhone($phone)
+    {
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        
+        if (strlen($phone) === 11 || strlen($phone) === 10) {
+            $phone = '55' . $phone;
+        }
+        
+        return $phone . '@c.us';
     }
 }
