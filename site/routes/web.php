@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{id}', [GalleryController::class, 'update'])->name('update');
         Route::delete('/{id}', [GalleryController::class, 'destroy'])->name('destroy');
         Route::post('/order', [GalleryController::class, 'updateOrder'])->name('updateOrder');
+        Route::post('/settings', [GalleryController::class, 'updateSettings'])->name('updateSettings');
     });
     
     // Services Management

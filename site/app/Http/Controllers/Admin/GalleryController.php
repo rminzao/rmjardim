@@ -12,17 +12,21 @@ class GalleryController extends Controller
     public function index()
     {
         $images = DB::table('gallery_images')
-            ->orderBy('order')
+            ->orderBy('order', 'asc')
             ->get();
-
-        return view('admin.gallery.index', compact('images'));
+        
+        $settings = DB::table('site_settings')
+            ->whereIn('key', ['logo_url', 'hero_image_url'])
+            ->pluck('value', 'key')
+            ->toArray();
+        
+        return view('admin.gallery.index', compact('images', 'settings'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'category' => 'required|string|max:100',
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
             'active' => 'boolean',
         ]);
@@ -35,7 +39,6 @@ class GalleryController extends Controller
 
         DB::table('gallery_images')->insert([
             'title' => $validated['title'],
-            'category' => $validated['category'],
             'image_path' => $path,
             'active' => $request->boolean('active', true),
             'order' => $lastOrder + 1,
@@ -58,7 +61,6 @@ class GalleryController extends Controller
 
         $data = [
             'title' => $validated['title'],
-            'category' => $validated['category'],
             'active' => $request->boolean('active'),
             'updated_at' => now(),
         ];
@@ -110,5 +112,33 @@ class GalleryController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
+            'hero_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+        ]);
+
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('images/logo', 'public');
+            
+            DB::table('site_settings')->updateOrInsert(
+                ['key' => 'logo_url'],
+                ['value' => $path, 'type' => 'text', 'group' => 'images', 'updated_at' => now()]
+            );
+        }
+
+        if ($request->hasFile('hero_image')) {
+            $path = $request->file('hero_image')->store('images/hero', 'public');
+            
+            DB::table('site_settings')->updateOrInsert(
+                ['key' => 'hero_image_url'],
+                ['value' => $path, 'type' => 'text', 'group' => 'images', 'updated_at' => now()]
+            );
+        }
+
+        return redirect()->route('admin.gallery.index')->with('success', 'Imagens atualizadas!');
     }
 }
