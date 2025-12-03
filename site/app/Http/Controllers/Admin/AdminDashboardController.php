@@ -17,13 +17,54 @@ class AdminDashboardController extends Controller
             'needs_maintenance' => $this->getMaintenanceCount(),
         ];
 
-        // Últimos contatos
-        $recent_contacts = DB::table('contact_messages')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+        $query = DB::table('contact_messages');
 
-        return view('admin.dashboard', compact('stats', 'recent_contacts'));
+        // Filtro de busca
+        if (request()->has('search') && request('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%")
+                ->orWhere('message', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtro de status
+        if (request()->has('filter') && request('filter') !== 'all') {
+            switch (request('filter')) {
+                case 'pending':
+                    $query->where('status', 'new');
+                    break;
+                case 'hired':
+                    $query->where('status', 'hired');
+                    break;
+            }
+        }
+
+        $clients = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        // Converter created_at
+        $clients->getCollection()->transform(function($client) {
+            $client->created_at = \Carbon\Carbon::parse($client->created_at);
+            if ($client->hired_at) {
+                $client->hired_at = \Carbon\Carbon::parse($client->hired_at);
+            }
+            if ($client->whatsapp_sent_at) {
+                $client->whatsapp_sent_at = \Carbon\Carbon::parse($client->whatsapp_sent_at);
+            }
+            return $client;
+        });
+
+        // Calcular dias para manutenção
+        $clients->each(function($client) {
+            if ($client->status === 'hired' && $client->hired_at) {
+                $daysElapsed = now()->diffInDays($client->hired_at);
+                $client->days_until_maintenance = ($client->maintenance_days ?? 30) - $daysElapsed;
+                $client->needs_maintenance = $daysElapsed >= ($client->maintenance_days ?? 30);
+            }
+        });
+
+        return view('admin.dashboard', compact('stats', 'clients'));
     }
 
     private function getMaintenanceCount()
