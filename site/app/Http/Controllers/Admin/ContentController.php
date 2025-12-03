@@ -41,8 +41,8 @@ class ContentController extends Controller
             'footer_email' => 'required|email|max:255',
             'footer_address' => 'required|string|max:255',
             'footer_copyright' => 'required|string|max:255',
-            'instagram_url' => 'nullable|url',
-            'facebook_url' => 'nullable|url',
+            'instagram_url' => 'nullable|string|max:255',
+            'facebook_url' => 'nullable|string|max:255',
         ]);
 
         foreach ($validated as $key => $value) {
