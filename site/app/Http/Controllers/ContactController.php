@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ContactController extends Controller
 {
@@ -18,8 +19,17 @@ class ContactController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
+        // Gerar unique_id aleatório
+        $uniqueId = strtoupper(Str::random(6));
+
+        // Garantir que é único
+        while (DB::table('contact_messages')->where('unique_id', $uniqueId)->exists()) {
+            $uniqueId = strtoupper(Str::random(6));
+        }
+
         // Salva no banco
         $contactId = DB::table('contact_messages')->insertGetId([
+            'unique_id' => $uniqueId,
             'name' => $validated['name'],
             'phone' => $validated['phone'],
             'message' => $validated['message'],
@@ -40,6 +50,7 @@ class ContactController extends Controller
         // Enviar notificação para o admin
         try {
             $messageToAdmin = "🌱 *Novo contato - RM Jardim*\n\n"
+                . "🆔 *ID:* #{$uniqueId}\n"
                 . "👤 *Nome:* {$validated['name']}\n"
                 . "📱 *Telefone:* {$validated['phone']}\n"
                 . "💬 *Mensagem:* {$validated['message']}";

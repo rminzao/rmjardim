@@ -58,4 +58,8 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+// Webhook WhatsApp (sem autenticação)
+Route::post('/webhook/whatsapp', [App\Http\Controllers\WebhookController::class, 'handle'])
+    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
 require __DIR__.'/auth.php';

@@ -30,13 +30,11 @@ async function downloadImage(url) {
         const response = await axios.get(url, { responseType: 'arraybuffer' });
         const buffer = Buffer.from(response.data, 'binary');
         
-        // Cria pasta temp se não existir
         const tempDir = path.join(__dirname, 'temp');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir);
         }
         
-        // Salva arquivo temporário
         const filename = `temp_${Date.now()}.${url.split('.').pop()}`;
         const filepath = path.join(tempDir, filename);
         fs.writeFileSync(filepath, buffer);
@@ -76,6 +74,51 @@ wppconnect
     .then((cli) => {
         client = cli;
         console.log('✅ WhatsApp conectado!');
+        
+        // ============================================
+        //               WEBHOOK
+        // ============================================
+        client.onAnyMessage(async (message) => {
+            try {
+                console.log('📩 Mensagem recebida:', {
+                    from: message.from,
+                    body: message.body,
+                    isGroupMsg: message.isGroupMsg
+                });
+
+                // Ignorar mensagens de grupos
+                if (message.isGroupMsg) {
+                    return;
+                }
+
+                // Ignorar mensagens de status
+                if (message.from === 'status@broadcast') {
+                    return;
+                }
+
+                // Ignorar mensagens vazias
+                if (!message.body || message.body.trim() === '') {
+                    return;
+                }
+
+                // Enviar para o Laravel
+                const webhookUrl = 'http://rmjardim-laravel:8000/webhook/whatsapp';
+                
+                const response = await axios.post(webhookUrl, {
+                    from: message.from,
+                    body: message.body,
+                    timestamp: message.timestamp,
+                    sender: message.sender
+                });
+
+                console.log('✅ Webhook enviado:', response.data);
+
+            } catch (error) {
+                console.error('❌ Erro ao processar mensagem:', error.message);
+            }
+        });
+        
+        console.log('🎯 Webhook configurado para enviar comandos ao Laravel');
     })
     .catch((error) => {
         console.error('❌ Erro ao conectar:', error);
@@ -144,11 +187,9 @@ app.post('/send-image', async (req, res) => {
         console.log(`Enviando imagem para: ${formattedPhone}`);
         console.log(`URL da imagem: ${image}`);
 
-        // Baixa a imagem
         tempFilePath = await downloadImage(image);
         console.log(`Imagem baixada: ${tempFilePath}`);
 
-        // Envia a imagem
         await client.sendImage(
             formattedPhone,
             tempFilePath,
@@ -156,7 +197,6 @@ app.post('/send-image', async (req, res) => {
             caption || ''
         );
 
-        // Remove arquivo temporário
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
         }
@@ -169,7 +209,6 @@ app.post('/send-image', async (req, res) => {
     } catch (error) {
         console.error('Erro ao enviar imagem:', error);
         
-        // Remove arquivo temporário em caso de erro
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
         }
@@ -205,7 +244,6 @@ app.post('/send-file', async (req, res) => {
         const formattedPhone = formatPhoneNumber(phone);
         console.log(`Enviando arquivo para: ${formattedPhone}`);
 
-        // Baixa o arquivo
         tempFilePath = await downloadImage(file);
 
         await client.sendFile(
@@ -215,7 +253,6 @@ app.post('/send-file', async (req, res) => {
             caption || ''
         );
 
-        // Remove arquivo temporário
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
         }
@@ -228,7 +265,6 @@ app.post('/send-file', async (req, res) => {
     } catch (error) {
         console.error('Erro ao enviar arquivo:', error);
         
-        // Remove arquivo temporário em caso de erro
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
         }
@@ -259,7 +295,6 @@ app.post('/send-image-file', async (req, res) => {
             });
         }
 
-        // Verifica se arquivo existe
         if (!fs.existsSync(imagePath)) {
             return res.status(404).json({ 
                 success: false, 
@@ -271,7 +306,6 @@ app.post('/send-image-file', async (req, res) => {
         console.log(`Enviando imagem para: ${formattedPhone}`);
         console.log(`Arquivo: ${imagePath}`);
 
-        // Envia a imagem direto do caminho local
         await client.sendImage(
             formattedPhone,
             imagePath,
