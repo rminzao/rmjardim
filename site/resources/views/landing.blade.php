@@ -39,16 +39,20 @@
 
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-[hsl(90,20%,85%)]">
-        <div class="container mx-auto px-4 py-4">
+        <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
                 <!-- Logo -->
                 <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-lg bg-[hsl(142,50%,35%)]/10 border-2 border-dashed border-[hsl(142,50%,35%)] flex items-center justify-center">
-                        <svg class="w-6 h-6 text-[hsl(142,50%,35%)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                        </svg>
-                    </div>
-                    <span class="font-display text-xl font-semibold">{{ $settings['logo_text'] ?? 'RM Jardim' }}</span>
+                    @if(isset($settings['logo_url']) && $settings['logo_url'])
+                        <img src="{{ asset('storage/' . $settings['logo_url']) }}" alt="Logo" class="w-24 md:w-32 h-auto object-contain">
+                    @else
+                        <div class="w-12 h-12 rounded-lg bg-[hsl(142,50%,35%)]/10 border-2 border-dashed border-[hsl(142,50%,35%)] flex items-center justify-center">
+                            <svg class="w-6 h-6 text-[hsl(142,50%,35%)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                            </svg>
+                        </div>
+                        <span class="font-display text-xl font-semibold">{{ $settings['logo_text'] ?? 'RM Jardim' }}</span>
+                    @endif
                 </div>
 
                 <!-- Desktop Nav -->
@@ -84,7 +88,8 @@
     <!-- Hero Section -->
     <section id="inicio" class="relative min-h-screen flex items-center justify-center overflow-hidden">
         <!-- Background Image -->
-        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style="background-image: url('{{ asset('images/hero-bg.jpg') }}');">
+        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+             style="background-image: url('{{ isset($settings['hero_image_url']) && $settings['hero_image_url'] ? asset('storage/' . $settings['hero_image_url']) : asset('images/hero-bg.jpg') }}');">
             <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
         </div>
 
@@ -145,9 +150,9 @@
                 @foreach($services as $index => $service)
                 <div class="group p-8 rounded-2xl bg-white border border-[hsl(90,20%,85%)] hover:border-[hsl(142,50%,35%)]/50 hover:shadow-lg transition-all duration-300 animate-fade-up" style="animation-delay: {{ $index * 100 }}ms">
                     <div class="w-14 h-14 rounded-xl bg-[hsl(142,50%,35%)]/10 flex items-center justify-center mb-6 group-hover:bg-[hsl(142,50%,35%)] group-hover:scale-110 transition-all duration-300">
-                        <svg class="w-7 h-7 text-[hsl(142,50%,35%)] group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                        </svg>
+                        <div class="w-7 h-7 text-[hsl(142,50%,35%)] group-hover:text-white transition-colors">
+                            {!! app(\App\Http\Controllers\Admin\ServiceController::class)->getIconSvg($service->icon) !!}
+                        </div>
                     </div>
                     <h3 class="font-display text-xl font-semibold mb-3">{{ $service->title }}</h3>
                     <p class="text-gray-600 leading-relaxed">{{ $service->description }}</p>
@@ -157,7 +162,7 @@
         </div>
     </section>
 
-    <!-- Portfolio Section -->
+   <!-- Portfolio Section -->
     <section id="portfolio" class="py-24 bg-white">
         <div class="container mx-auto px-4">
             <div class="text-center mb-16">
@@ -172,33 +177,137 @@
                 </p>
             </div>
 
+            @if(count($servicePortfolios) > 0)
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @forelse($images as $index => $image)
-                <div class="group relative overflow-hidden rounded-2xl cursor-pointer animate-fade-up" style="animation-delay: {{ $index * 100 }}ms">
-                    <div class="aspect-square">
-                        <img src="{{ Storage::url($image->image_path) }}" alt="Projeto {{ $index + 1 }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    </div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="absolute bottom-0 left-0 right-0 p-6">
-                            <span class="inline-block px-3 py-1 rounded-full bg-[hsl(142,50%,35%)]/80 text-white text-xs font-medium mb-2">
-                                Paisagismo
+                @foreach($servicePortfolios as $index => $portfolio)
+                <div class="group relative overflow-hidden rounded-2xl cursor-pointer animate-fade-up" 
+                     style="animation-delay: {{ $index * 100 }}ms"
+                     x-data="carousel{{ $index }}()"
+                     @mouseenter="stopAutoplay()"
+                     @mouseleave="startAutoplay()">
+                    
+                    <!-- Carousel Container -->
+                    <div class="aspect-square relative">
+                        <!-- Images -->
+                        @foreach($portfolio['images'] as $imgIndex => $image)
+                        <div x-show="currentSlide === {{ $imgIndex }}" 
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0"
+                             x-transition:enter-end="opacity-100"
+                             class="absolute inset-0">
+                            <img src="{{ asset('storage/' . $image->image_path) }}" 
+                                 alt="{{ $image->title }}" 
+                                 class="w-full h-full object-cover">
+                        </div>
+                        @endforeach
+
+                        <!-- Gradient Overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        
+                        <!-- Service Badge -->
+                        <div class="absolute top-4 left-4">
+                            <span class="inline-block px-3 py-1 rounded-full bg-[hsl(142,50%,35%)]/90 text-white text-xs font-medium backdrop-blur">
+                                {{ $portfolio['service']->title }}
                             </span>
+                        </div>
+
+                        <!-- Image Counter -->
+                        @if($portfolio['images']->count() > 1)
+                        <div class="absolute top-4 right-4">
+                            <span class="inline-block px-3 py-1 rounded-full bg-black/50 text-white text-xs font-medium backdrop-blur">
+                                <span x-text="currentSlide + 1"></span>/{{ $portfolio['images']->count() }}
+                            </span>
+                        </div>
+                        @endif
+
+                        <!-- Title on Hover -->
+                        <div class="absolute bottom-0 left-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <h3 class="font-display text-xl font-semibold text-white">
-                                Projeto {{ $index + 1 }}
+                                <span x-text="images[currentSlide].title"></span>
                             </h3>
                         </div>
+
+                        <!-- Navigation Buttons (only show if more than 1 image) -->
+                        @if($portfolio['images']->count() > 1)
+                        <button 
+                            @click.stop="prev()"
+                            class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:scale-110"
+                        >
+                            <svg class="w-4 h-4 text-[hsl(142,50%,35%)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        
+                        <button 
+                            @click.stop="next()"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:scale-110"
+                        >
+                            <svg class="w-4 h-4 text-[hsl(142,50%,35%)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+
+                        <!-- Dots Indicators -->
+                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            @foreach($portfolio['images'] as $imgIndex => $image)
+                            <button 
+                                @click.stop="currentSlide = {{ $imgIndex }}"
+                                class="transition-all"
+                                :class="currentSlide === {{ $imgIndex }} ? 'w-6 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/50 hover:bg-white/75'"
+                                style="border-radius: 9999px;"
+                            ></button>
+                            @endforeach
+                        </div>
+                        @endif
                     </div>
                 </div>
-                @empty
-                @for($i = 1; $i <= 6; $i++)
-                <div class="group relative overflow-hidden rounded-2xl cursor-pointer animate-fade-up" style="animation-delay: {{ ($i - 1) * 100 }}ms">
-                    <div class="aspect-square bg-gray-200 flex items-center justify-center">
-                        <span class="text-gray-400 text-lg">Imagem {{ $i }}</span>
-                    </div>
-                </div>
-                @endfor
-                @endforelse
+
+                <script>
+                function carousel{{ $index }}() {
+                    return {
+                        currentSlide: 0,
+                        totalSlides: {{ $portfolio['images']->count() }},
+                        autoplayInterval: null,
+                        images: @json($portfolio['images']->map(fn($img) => ['title' => $img->title])),
+                        
+                        init() {
+                            this.startAutoplay();
+                        },
+                        
+                        next() {
+                            this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
+                        },
+                        
+                        prev() {
+                            this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
+                        },
+                        
+                        startAutoplay() {
+                            if (this.totalSlides > 1) {
+                                this.autoplayInterval = setInterval(() => {
+                                    this.next();
+                                }, 4000);
+                            }
+                        },
+                        
+                        stopAutoplay() {
+                            if (this.autoplayInterval) {
+                                clearInterval(this.autoplayInterval);
+                            }
+                        }
+                    }
+                }
+                </script>
+                @endforeach
             </div>
+            @else
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-gray-400 text-lg">Nenhuma imagem no portfólio ainda</p>
+            </div>
+            @endif
         </div>
     </section>
 
@@ -271,12 +380,16 @@
                 <!-- Logo & Description -->
                 <div>
                     <div class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                            </svg>
-                        </div>
-                        <span class="font-display text-xl font-semibold">{{ $settings['logo_text'] ?? 'RM Jardim' }}</span>
+                        @if(isset($settings['logo_url']) && $settings['logo_url'])
+                            <img src="{{ asset('storage/' . $settings['logo_url']) }}" alt="Logo" class="h-10 w-auto object-contain">
+                        @else
+                            <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                                </svg>
+                            </div>
+                            <span class="font-display text-xl font-semibold">{{ $settings['logo_text'] ?? 'RM Jardim' }}</span>
+                        @endif
                     </div>
                     <p class="text-white/70 leading-relaxed">
                         {{ $settings['footer_description'] ?? 'Transformando espaços em jardins dos sonhos.' }}

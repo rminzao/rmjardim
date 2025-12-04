@@ -9,24 +9,44 @@ class LandingController extends Controller
 {
     public function index()
     {
-        // Busca configurações do site
         $settings = DB::table('site_settings')
             ->pluck('value', 'key')
             ->toArray();
         
-        // Busca serviços ativos
         $services = DB::table('services')
-            ->where('is_active', true)
+            ->where('active', true)
             ->orderBy('order', 'asc')
             ->get();
         
-        // Busca imagens da galeria
-        $images = DB::table('gallery_images')
-            ->where('is_active', true)
+        // Agrupar imagens por serviço
+        $servicePortfolios = [];
+        foreach ($services as $service) {
+            $images = DB::table('gallery_images')
+                ->where('service_id', $service->id)
+                ->orderBy('order', 'asc')
+                ->get();
+            
+            if ($images->count() > 0) {
+                $servicePortfolios[] = [
+                    'service' => $service,
+                    'images' => $images
+                ];
+            }
+        }
+        
+        // Imagens sem categoria
+        $uncategorizedImages = DB::table('gallery_images')
+            ->whereNull('service_id')
             ->orderBy('order', 'asc')
-            ->limit(6)
             ->get();
         
-        return view('landing', compact('settings', 'services', 'images'));
+        if ($uncategorizedImages->count() > 0) {
+            $servicePortfolios[] = [
+                'service' => (object) ['title' => 'Outros Trabalhos'],
+                'images' => $uncategorizedImages
+            ];
+        }
+        
+        return view('landing', compact('settings', 'services', 'servicePortfolios'));
     }
 }

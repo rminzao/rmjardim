@@ -155,6 +155,21 @@
                         >
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Serviço</label>
+                        <select 
+                            onchange="updateImage({{ $image->id }}, 'service_id', this.value)"
+                            class="w-full px-2 py-1.5 text-sm rounded-lg border border-[hsl(90,20%,85%)] bg-white text-[hsl(150,30%,15%)] focus:outline-none focus:ring-2 focus:ring-[hsl(142,50%,35%)]"
+                        >
+                            <option value="">Sem categoria</option>
+                            @foreach($services as $service)
+                               <option value="{{ $service->id }}" {{ $image->service_id == $service->id ? 'selected' : '' }}>
+                                    {{ $service->title }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="flex gap-2">
                         <label class="flex-1 cursor-pointer">
                             <input
@@ -220,7 +235,18 @@
                             >
                         </div>
 
-                        <input type="hidden" name="active" value="1">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Serviço</label>
+                            <select 
+                                name="service_id"
+                                class="w-full px-2 py-1.5 text-sm rounded-lg border border-[hsl(90,20%,85%)] bg-white text-[hsl(150,30%,15%)] focus:outline-none focus:ring-2 focus:ring-[hsl(142,50%,35%)]"
+                            >
+                                <option value="">Sem categoria</option>
+                                @foreach($services as $service)
+                                    <option value="{{ $service->id }}">{{ $service->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
                         <div class="flex gap-2">
                             <button 

@@ -12,7 +12,9 @@ class GalleryController extends Controller
     public function index()
     {
         $images = DB::table('gallery_images')
-            ->orderBy('order', 'asc')
+            ->leftJoin('services', 'gallery_images.service_id', '=', 'services.id')
+            ->select('gallery_images.*', 'services.title as service_name')
+            ->orderBy('gallery_images.order', 'asc')
             ->get();
         
         $settings = DB::table('site_settings')
@@ -20,15 +22,19 @@ class GalleryController extends Controller
             ->pluck('value', 'key')
             ->toArray();
         
-        return view('admin.gallery.index', compact('images', 'settings'));
+        $services = DB::table('services')
+            ->orderBy('title', 'asc')
+            ->get();
+        
+        return view('admin.gallery.index', compact('images', 'settings', 'services'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'service_id' => 'nullable|exists:services,id',
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
-            'active' => 'boolean',
         ]);
 
         // Upload da imagem
@@ -39,8 +45,8 @@ class GalleryController extends Controller
 
         DB::table('gallery_images')->insert([
             'title' => $validated['title'],
+            'service_id' => $validated['service_id'] ?? null,
             'image_path' => $path,
-            'active' => $request->boolean('active', true),
             'order' => $lastOrder + 1,
             'created_at' => now(),
             'updated_at' => now(),
@@ -53,17 +59,24 @@ class GalleryController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'category' => 'required|string|max:100',
+            'title' => 'nullable|string|max:255',
+            'service_id' => 'nullable|exists:services,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
-            'active' => 'boolean',
         ]);
 
         $data = [
-            'title' => $validated['title'],
-            'active' => $request->boolean('active'),
             'updated_at' => now(),
         ];
+
+        // Atualizar título se foi enviado
+        if ($request->has('title')) {
+            $data['title'] = $validated['title'];
+        }
+
+        // Atualizar service_id se foi enviado
+        if ($request->has('service_id')) {
+            $data['service_id'] = $validated['service_id'];
+        }
 
         // Se enviou nova imagem
         if ($request->hasFile('image')) {
@@ -80,8 +93,7 @@ class GalleryController extends Controller
 
         DB::table('gallery_images')->where('id', $id)->update($data);
 
-        return redirect()->route('admin.gallery.index')
-            ->with('success', 'Imagem atualizada com sucesso!');
+        return response()->json(['success' => true]);
     }
 
     public function destroy($id)
