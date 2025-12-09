@@ -57,6 +57,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{id}', [ServiceController::class, 'destroy'])->name('destroy');
         Route::post('/order', [ServiceController::class, 'updateOrder'])->name('updateOrder');
     });
+
+    // Propostas
+    Route::prefix('admin/proposals')->name('admin.proposals.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\ProposalServiceController::class, 'indexWeb'])->name('index');
+    });
 });
 
 // Webhook WhatsApp (sem autenticação)
