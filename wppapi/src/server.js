@@ -8,6 +8,37 @@ const app = express();
 app.use(express.json());
 
 let client;
+let qrCodeData = null;
+let isConnected = false;
+let connectionStartTime = null;
+let messagesSent = 0;
+let customLogs = [];
+const MAX_LOGS = 100;
+
+function addLog(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString('pt-BR');
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️',
+        message: '📤',
+        received: '📥',
+        qr: '📱',
+        disconnect: '🔌',
+        restart: '🔄'
+    };
+    
+    const icon = icons[type] || 'ℹ️';
+    const logEntry = `[${timestamp}] ${icon} ${message}`;
+    
+    customLogs.push(logEntry);
+    if (customLogs.length > MAX_LOGS) {
+        customLogs.shift();
+    }
+    
+    console.log(logEntry);
+}
 
 // Função para formatar número de telefone
 function formatPhoneNumber(phone) {
@@ -45,20 +76,34 @@ async function downloadImage(url) {
     }
 }
 
-wppconnect
-    .create({
+// Função para iniciar cliente WhatsApp
+async function startWhatsAppClient() {
+    addLog('Iniciando conexão WhatsApp...', 'info');
+    
+    return wppconnect.create({
         session: 'rmjardim-session',
         catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
-            console.log('QR Code:', asciiQR);
+            qrCodeData = base64Qrimg;
+            addLog('QR Code gerado - aguardando scan', 'qr');
         },
         statusFind: (statusSession, session) => {
-            console.log('Status:', statusSession);
+            if (statusSession === 'qrReadSuccess') {
+                addLog('QR Code escaneado com sucesso!', 'success');
+            } else if (statusSession === 'inChat') {
+                addLog('WhatsApp conectado!', 'success');
+                isConnected = true;
+                connectionStartTime = Date.now();
+                qrCodeData = null;
+            } else if (statusSession === 'notLogged') {
+                addLog('Aguardando autenticação...', 'warning');
+                isConnected = false;
+            }
         },
         headless: 'new',
         devtools: false,
         useChrome: true,
         debug: false,
-        logQR: true,
+        logQR: false,
         browserArgs: [
             '--disable-web-security',
             '--no-sandbox',
@@ -66,63 +111,190 @@ wppconnect
             '--disable-features=IsolateOrigins,site-per-process'
         ],
         disableWelcome: true,
-        updatesLog: true,
+        updatesLog: false,
         autoClose: 60000,
         tokenStore: 'file',
         folderNameToken: './tokens',
     })
     .then((cli) => {
         client = cli;
-        console.log('✅ WhatsApp conectado!');
+        isConnected = true;
+        connectionStartTime = Date.now();
+        addLog('Cliente WhatsApp inicializado', 'success');
         
-        // ============================================
-        //               WEBHOOK
-        // ============================================
+        // Webhook para mensagens
         client.onAnyMessage(async (message) => {
             try {
-                console.log('📩 Mensagem recebida:', {
-                    from: message.from,
-                    body: message.body,
-                    isGroupMsg: message.isGroupMsg
-                });
-
                 // Ignorar mensagens de grupos
-                if (message.isGroupMsg) {
-                    return;
-                }
-
+                if (message.isGroupMsg) return;
+                
                 // Ignorar mensagens de status
-                if (message.from === 'status@broadcast') {
-                    return;
-                }
-
+                if (message.from === 'status@broadcast') return;
+                
                 // Ignorar mensagens vazias
-                if (!message.body || message.body.trim() === '') {
-                    return;
-                }
+                if (!message.body || message.body.trim() === '') return;
+
+                addLog(`Mensagem recebida de: ${message.from}`, 'received');
 
                 // Enviar para o Laravel
-                const webhookUrl = 'http://rmjardim-laravel:8000/webhook/whatsapp';
+                const webhookUrl = 'http://localhost/webhook/whatsapp';
                 
-                const response = await axios.post(webhookUrl, {
+                await axios.post(webhookUrl, {
                     from: message.from,
                     body: message.body,
                     timestamp: message.timestamp,
                     sender: message.sender
                 });
 
-                console.log('✅ Webhook enviado:', response.data);
-
             } catch (error) {
-                console.error('❌ Erro ao processar mensagem:', error.message);
+                addLog(`Erro ao processar mensagem: ${error.message}`, 'error');
             }
         });
         
-        console.log('🎯 Webhook configurado para enviar comandos ao Laravel');
+        return cli;
     })
     .catch((error) => {
-        console.error('❌ Erro ao conectar:', error);
+        addLog(`Erro ao conectar: ${error.message}`, 'error');
+        isConnected = false;
+        throw error;
     });
+}
+
+// Iniciar cliente automaticamente
+startWhatsAppClient();
+
+// GET /status - Status da conexão
+app.get('/status', (req, res) => {
+    const uptime = connectionStartTime ? Math.floor((Date.now() - connectionStartTime) / 1000) : 0;
+    
+    res.json({
+        connected: isConnected,
+        uptime: uptime,
+        messagesSent: messagesSent
+    });
+});
+
+// GET /qrcode
+app.get('/qrcode', (req, res) => {
+    if (qrCodeData) {
+        res.json({
+            qrcode: qrCodeData
+        });
+    } else {
+        res.status(404).json({
+            error: 'QR Code não disponível'
+        });
+    }
+});
+
+// GET /logs
+app.get('/logs', (req, res) => {
+    const limit = parseInt(req.query.limit) || 50;
+    const recentLogs = customLogs.slice(-limit);
+    
+    res.json({
+        logs: recentLogs
+    });
+});
+
+// POST /connect
+app.post('/connect', async (req, res) => {
+    try {
+        if (isConnected) {
+            return res.status(400).json({
+                success: false,
+                error: 'WhatsApp já está conectado'
+            });
+        }
+        
+        addLog('Iniciando nova conexão...', 'restart');
+        await startWhatsAppClient();
+        
+        res.json({
+            success: true,
+            message: 'Conexão iniciada'
+        });
+    } catch (error) {
+        addLog(`Erro ao conectar: ${error.message}`, 'error');
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// POST /disconnect
+app.post('/disconnect', async (req, res) => {
+    try {
+        if (!client) {
+            return res.status(400).json({
+                success: false,
+                error: 'Cliente não inicializado'
+            });
+        }
+        
+        addLog('Desconectando WhatsApp...', 'disconnect');
+        await client.close();
+        
+        isConnected = false;
+        connectionStartTime = null;
+        qrCodeData = null;
+        client = null;
+        
+        addLog('WhatsApp desconectado', 'disconnect');
+        
+        res.json({
+            success: true,
+            message: 'Desconectado com sucesso'
+        });
+    } catch (error) {
+        addLog(`Erro ao desconectar: ${error.message}`, 'error');
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// POST /restart
+app.post('/restart', async (req, res) => {
+    try {
+        addLog('Reiniciando conexão...', 'restart');
+        
+        if (client) {
+            await client.close();
+            isConnected = false;
+            client = null;
+        }
+        
+        // Deletar tokens para forçar novo QR Code
+        const tokensPath = path.join(__dirname, 'tokens');
+        if (fs.existsSync(tokensPath)) {
+            fs.rmSync(tokensPath, { recursive: true, force: true });
+            addLog('Tokens removidos', 'info');
+        }
+        
+        qrCodeData = null;
+        connectionStartTime = null;
+        messagesSent = 0;
+        
+        // Aguardar 2 segundos antes de reconectar
+        setTimeout(async () => {
+            await startWhatsAppClient();
+        }, 2000);
+        
+        res.json({
+            success: true,
+            message: 'Reiniciando...'
+        });
+    } catch (error) {
+        addLog(`Erro ao reiniciar: ${error.message}`, 'error');
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
 
 // Endpoint para enviar mensagem de texto
 app.post('/send-message', async (req, res) => {
@@ -136,7 +308,7 @@ app.post('/send-message', async (req, res) => {
             });
         }
 
-        if (!client) {
+        if (!client || !isConnected) {
             return res.status(503).json({ 
                 success: false, 
                 error: 'WhatsApp não conectado' 
@@ -144,9 +316,10 @@ app.post('/send-message', async (req, res) => {
         }
 
         const formattedPhone = formatPhoneNumber(phone);
-        console.log(`Enviando mensagem para: ${formattedPhone}`);
+        addLog(`Enviando mensagem para: ${phone}`, 'message');
 
         await client.sendText(formattedPhone, message);
+        messagesSent++;
 
         res.json({ 
             success: true, 
@@ -154,7 +327,7 @@ app.post('/send-message', async (req, res) => {
             to: formattedPhone
         });
     } catch (error) {
-        console.error('Erro ao enviar mensagem:', error);
+        addLog(`Erro ao enviar mensagem: ${error.message}`, 'error');
         res.status(500).json({ 
             success: false, 
             error: error.message 
@@ -176,7 +349,7 @@ app.post('/send-image', async (req, res) => {
             });
         }
 
-        if (!client) {
+        if (!client || !isConnected) {
             return res.status(503).json({ 
                 success: false, 
                 error: 'WhatsApp não conectado' 
@@ -184,11 +357,9 @@ app.post('/send-image', async (req, res) => {
         }
 
         const formattedPhone = formatPhoneNumber(phone);
-        console.log(`Enviando imagem para: ${formattedPhone}`);
-        console.log(`URL da imagem: ${image}`);
+        addLog(`Enviando imagem para: ${phone}`, 'message');
 
         tempFilePath = await downloadImage(image);
-        console.log(`Imagem baixada: ${tempFilePath}`);
 
         await client.sendImage(
             formattedPhone,
@@ -196,6 +367,8 @@ app.post('/send-image', async (req, res) => {
             path.basename(tempFilePath),
             caption || ''
         );
+
+        messagesSent++;
 
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
@@ -207,7 +380,7 @@ app.post('/send-image', async (req, res) => {
             to: formattedPhone
         });
     } catch (error) {
-        console.error('Erro ao enviar imagem:', error);
+        addLog(`Erro ao enviar imagem: ${error.message}`, 'error');
         
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
@@ -234,7 +407,7 @@ app.post('/send-file', async (req, res) => {
             });
         }
 
-        if (!client) {
+        if (!client || !isConnected) {
             return res.status(503).json({ 
                 success: false, 
                 error: 'WhatsApp não conectado' 
@@ -242,7 +415,7 @@ app.post('/send-file', async (req, res) => {
         }
 
         const formattedPhone = formatPhoneNumber(phone);
-        console.log(`Enviando arquivo para: ${formattedPhone}`);
+        addLog(`Enviando arquivo para: ${phone}`, 'message');
 
         tempFilePath = await downloadImage(file);
 
@@ -252,6 +425,8 @@ app.post('/send-file', async (req, res) => {
             filename || path.basename(tempFilePath),
             caption || ''
         );
+
+        messagesSent++;
 
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
@@ -263,7 +438,7 @@ app.post('/send-file', async (req, res) => {
             to: formattedPhone
         });
     } catch (error) {
-        console.error('Erro ao enviar arquivo:', error);
+        addLog(`Erro ao enviar arquivo: ${error.message}`, 'error');
         
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
@@ -288,7 +463,7 @@ app.post('/send-image-file', async (req, res) => {
             });
         }
 
-        if (!client) {
+        if (!client || !isConnected) {
             return res.status(503).json({ 
                 success: false, 
                 error: 'WhatsApp não conectado' 
@@ -303,8 +478,7 @@ app.post('/send-image-file', async (req, res) => {
         }
 
         const formattedPhone = formatPhoneNumber(phone);
-        console.log(`Enviando imagem para: ${formattedPhone}`);
-        console.log(`Arquivo: ${imagePath}`);
+        addLog(`Enviando imagem local para: ${phone}`, 'message');
 
         await client.sendImage(
             formattedPhone,
@@ -313,13 +487,15 @@ app.post('/send-image-file', async (req, res) => {
             caption || ''
         );
 
+        messagesSent++;
+
         res.json({ 
             success: true, 
             message: 'Imagem enviada com sucesso',
             to: formattedPhone
         });
     } catch (error) {
-        console.error('Erro ao enviar imagem:', error);
+        addLog(`Erro ao enviar imagem: ${error.message}`, 'error');
         res.status(500).json({ 
             success: false, 
             error: error.message 
@@ -327,6 +503,7 @@ app.post('/send-image-file', async (req, res) => {
     }
 });
 
-app.listen(3000, () => {
-    console.log('🚀 API rodando na porta 3000');
+const PORT = process.env.PORT || 3002;
+app.listen(PORT, () => {
+    addLog(`API rodando na porta ${PORT}`, 'success');
 });

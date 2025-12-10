@@ -19,7 +19,7 @@
             padding: 15px;
         }
         
-        /* Border fino verde */
+        /* Border */
         .page-border {
             border: 3px solid #228B22;
             border-radius: 5px;
@@ -27,7 +27,7 @@
             min-height: 270mm;
         }
         
-        /* Logo pequeno centralizado */
+        /* Logo */
         .logo-section {
             text-align: center;
             margin-bottom: 5px;
@@ -38,7 +38,7 @@
             height: 100px;
         }
         
-        /* CNPJ e Tel logo abaixo */
+        /* CNPJ e Tel  */
         .company-info {
             text-align: center;
             color: #505050;
@@ -46,7 +46,7 @@
             margin-bottom: 10px;
         }
         
-        /* Título com fundo verde claro */
+        /* Título */
         .proposal-title {
             background-color: #E8F5E8;
             text-align: center;
