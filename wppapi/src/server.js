@@ -32,9 +32,10 @@ function addLog(message, type = 'info') {
     const icon = icons[type] || 'ℹ️';
     const logEntry = `[${timestamp}] ${icon} ${message}`;
     
-    customLogs.push(logEntry);
+    // Adiciona no início do array (logs mais recentes primeiro)
+    customLogs.unshift(logEntry);
     if (customLogs.length > MAX_LOGS) {
-        customLogs.shift();
+        customLogs.pop(); // Remove o último (mais antigo)
     }
     
     console.log(logEntry);
@@ -190,7 +191,7 @@ app.get('/qrcode', (req, res) => {
 // GET /logs
 app.get('/logs', (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
-    const recentLogs = customLogs.slice(-limit);
+    const recentLogs = customLogs.slice(0, limit); // Pega do início (mais recentes)
     
     res.json({
         logs: recentLogs

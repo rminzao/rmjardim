@@ -62,7 +62,23 @@ Route::middleware('auth')->group(function () {
     Route::prefix('admin/proposals')->name('admin.proposals.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ProposalServiceController::class, 'indexWeb'])->name('index');
     });
+
+    // WhatsApp Manager API
+    Route::prefix('admin/whatsapp')->name('admin.whatsapp.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\WhatsAppManagerController::class, 'index'])->name('index');
+        Route::get('/status', [App\Http\Controllers\Admin\WhatsAppManagerController::class, 'status'])->name('status');
+        Route::get('/qrcode', [App\Http\Controllers\Admin\WhatsAppManagerController::class, 'qrcode'])->name('qrcode');
+        Route::get('/logs', [App\Http\Controllers\Admin\WhatsAppManagerController::class, 'logs'])->name('logs');
+        Route::post('/connect', [App\Http\Controllers\Admin\WhatsAppManagerController::class, 'connect'])->name('connect');
+        Route::post('/disconnect', [App\Http\Controllers\Admin\WhatsAppManagerController::class, 'disconnect'])->name('disconnect');
+        Route::post('/restart', [App\Http\Controllers\Admin\WhatsAppManagerController::class, 'restart'])->name('restart');
+    });
 });
+
+// WhatsApp Manager
+Route::get('/admin/whatsapp', [App\Http\Controllers\Admin\WhatsAppManagerController::class, 'index'])
+    ->name('admin.whatsapp.index')
+    ->middleware('auth');
 
 // Webhook WhatsApp (sem autenticação)
 Route::post('/webhook/whatsapp', [App\Http\Controllers\WebhookController::class, 'handle'])
