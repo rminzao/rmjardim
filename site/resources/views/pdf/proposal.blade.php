@@ -19,7 +19,7 @@
             padding: 15px;
         }
         
-        /* Border */
+        /* Border fino verde */
         .page-border {
             border: 3px solid #228B22;
             border-radius: 5px;
@@ -27,10 +27,10 @@
             min-height: 270mm;
         }
         
-        /* Logo */
+        /* Logo pequeno centralizado */
         .logo-section {
             text-align: center;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         
         .logo-section img {
@@ -38,26 +38,26 @@
             height: 100px;
         }
         
-        /* CNPJ e Tel  */
+        /* CNPJ e Tel logo abaixo */
         .company-info {
             text-align: center;
             color: #505050;
             font-size: 8pt;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         
-        /* Título */
+        /* Título com fundo verde claro */
         .proposal-title {
             background-color: #E8F5E8;
             text-align: center;
-            padding: 10px;
+            padding: 6px;
             border-radius: 3px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         
         .proposal-title h1 {
             color: #228B22;
-            font-size: 18pt;
+            font-size: 16pt;
             font-weight: bold;
             margin: 0;
         }
@@ -67,7 +67,7 @@
             text-align: center;
             color: #646464;
             font-size: 8pt;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         
         /* Header verde escuro */
@@ -77,15 +77,15 @@
             font-size: 10pt;
             font-weight: bold;
             text-align: center;
-            padding: 8px;
+            padding: 6px;
             margin-bottom: 0;
-            margin-top: 12px;
+            margin-top: 8px;
         }
         
         /* Box de dados do cliente */
         .client-info {
             background-color: #FAFAFA;
-            padding: 10px 12px;
+            padding: 8px 10px;
             font-size: 8pt;
             margin-bottom: 0;
         }
@@ -97,10 +97,6 @@
         
         .client-info td {
             padding: 3px 0;
-        }
-        
-        .client-info td:first-child {
-            width: 50%;
         }
         
         /* Tabela de serviços */
@@ -174,7 +170,7 @@
         /* Condições de pagamento */
         .payment-section {
             background-color: #FAFAFA;
-            padding: 10px 12px;
+            padding: 8px 10px;
             font-size: 8pt;
             margin-bottom: 0;
         }
@@ -182,43 +178,16 @@
         .validity-text {
             color: #646464;
             font-size: 7pt;
-            margin-top: 8px;
+            margin-top: 6px;
             font-style: italic;
         }
         
         /* Observações */
         .notes-section {
             background-color: #FFFDF0;
-            padding: 10px 12px;
+            padding: 8px 10px;
             font-size: 8pt;
             margin-bottom: 0;
-        }
-        
-        /* Assinaturas */
-        .signatures {
-            margin-top: 25px;
-            width: 100%;
-        }
-        
-        .signatures table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .signature-cell {
-            width: 30%;
-            text-align: center;
-        }
-        
-        .signature-line {
-            border-top: 1px solid #969696;
-            width: 80px;
-            margin: 0 auto 5px auto;
-        }
-        
-        .signature-label {
-            color: #646464;
-            font-size: 7pt;
         }
         
         /* Página */
@@ -264,8 +233,12 @@
         <div class="client-info">
             <table>
                 <tr>
-                    <td><strong>Nome:</strong> {{ $proposal->client_name ?? 'Não informado' }}</td>
-                    <td><strong>Telefone:</strong> {{ $proposal->client_phone ?? 'Não informado' }}</td>
+                    <td style="width: 70%; vertical-align: top;">
+                        <strong>Nome:</strong> {{ $proposal->client_name ?? 'Não informado' }}
+                    </td>
+                    <td style="width: 30%; vertical-align: top;">
+                        <strong>Telefone:</strong> {{ $proposal->client_phone ?? 'Não informado' }}
+                    </td>
                 </tr>
                 @if($proposal->client_email)
                 <tr>
@@ -338,21 +311,38 @@
         </div>
         @endif
 
-        <!-- Assinaturas -->
-        <div class="signatures">
-            <table>
+        <!-- Dados para Pagamento -->
+        <div class="section-header">DADOS PARA PAGAMENTO</div>
+        <div class="payment-section">
+            <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                    <td class="signature-cell">
-                        <div class="signature-line"></div>
-                        <div class="signature-label">RMJardim</div>
+                    <td style="width: 50%; padding-right: 15px; vertical-align: top;">
+                        <div style="margin-bottom: 8px;">
+                            <strong>Banco:</strong> {{ config('company.payment.bank_name') }} ({{ config('company.payment.bank_code') }})
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Agência:</strong> {{ config('company.payment.agency') }}
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Conta:</strong> {{ config('company.payment.account') }}
+                        </div>
+                        <div>
+                            <strong>Tipo:</strong> {{ config('company.payment.account_type') }}
+                        </div>
                     </td>
-                    <td style="width: 40%;"></td>
-                    <td class="signature-cell">
-                        <div class="signature-line"></div>
-                        <div class="signature-label">Cliente</div>
+                    <td style="width: 50%; padding-left: 15px; vertical-align: top; border-left: 1px solid #E0E0E0;">
+                        <div style="margin-bottom: 8px;">
+                            <strong>PIX ({{ config('company.payment.pix_type') }}):</strong>
+                        </div>
+                        <div style="font-size: 9pt; color: #228B22; font-weight: bold;">
+                            {{ config('company.payment.pix_key') }}
+                        </div>
                     </td>
                 </tr>
             </table>
+            <div style="margin-top: 12px; text-align: center; color: #646464; font-size: 7pt; font-style: italic;">
+                Agradecemos pela confiança! Estamos à disposição para qualquer dúvida.
+            </div>
         </div>
     </div>
 </body>

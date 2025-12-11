@@ -640,7 +640,7 @@
                             })),
                             discount: parseFloat(this.discount) || 0,
                             payment_conditions: this.paymentConditions,
-                            validity_days: parseInt(this.validity) || 0,
+                            validity_days: parseInt(this.validity) || null,
                             notes: this.notes
                         })
                     });
@@ -799,44 +799,49 @@
             },
 
             async fetchCNPJData(cnpj) {
-                this.documentLoading = true;
-                
-                try {
-                    const response = await fetch(`/api/admin/cnpj/${cnpj}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        this.companyName = data.company_name || '';
-                        this.companyTradeName = data.company_trade_name || '';
-                        this.clientName = data.company_trade_name || data.company_name || '';
-                        this.clientAddress = data.client_address || '';
-                        this.clientCity = data.client_city || '';
-                        this.clientState = data.client_state || '';
-                        this.clientZipcode = data.client_zipcode || '';
-
-                        if (data.client_phone) {
-                            this.clientPhone = data.client_phone;
-                            this.phoneMask();
-                        }
-
-                        this.clientEmail = data.client_email || '';
-
-                        this.documentSuccess = 'CNPJ válido!';
-                    } else {
-                        this.documentError = 'CNPJ não encontrado';
+            this.documentLoading = true;
+            
+            try {
+                const response = await fetch(`/api/admin/cnpj/${cnpj}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
                     }
-                } catch (error) {
-                    this.documentError = 'Erro ao buscar dados do CNPJ';
-                } finally {
-                    this.documentLoading = false;
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+
+                    this.companyName = data.razao_social || '';
+                    this.companyTradeName = data.nome_fantasia || '';
+                    this.clientName = data.nome_fantasia || data.razao_social || '';
+                    
+                    // Monta o endereço completo
+                    const endereco = [
+                        data.logradouro,
+                        data.numero,
+                        data.complemento
+                    ].filter(Boolean).join(', ');
+                    
+                    this.clientAddress = endereco || '';
+                    this.clientCity = data.municipio || '';
+                    this.clientState = data.uf || '';
+                    this.clientZipcode = data.cep || '';
+                    
+                    // Aplica máscara no CEP
+                    this.cepMask();
+
+                    this.documentSuccess = 'CNPJ válido e dados preenchidos!';
+                } else {
+                    this.documentError = 'CNPJ não encontrado';
                 }
-            },
+            } catch (error) {
+                console.error('Erro:', error);
+                this.documentError = 'Erro ao buscar dados do CNPJ';
+            } finally {
+                this.documentLoading = false;
+            }
+        },
             
             resetForm() {
                 this.document = '';

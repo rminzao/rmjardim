@@ -32,10 +32,10 @@ function addLog(message, type = 'info') {
     const icon = icons[type] || 'ℹ️';
     const logEntry = `[${timestamp}] ${icon} ${message}`;
     
-    // Adiciona no início do array (logs mais recentes primeiro)
+    // Adiciona no início do array
     customLogs.unshift(logEntry);
     if (customLogs.length > MAX_LOGS) {
-        customLogs.pop(); // Remove o último (mais antigo)
+        customLogs.pop();
     }
     
     console.log(logEntry);
@@ -164,7 +164,7 @@ async function startWhatsAppClient() {
 // Iniciar cliente automaticamente
 startWhatsAppClient();
 
-// GET /status - Status da conexão
+// GET /status
 app.get('/status', (req, res) => {
     const uptime = connectionStartTime ? Math.floor((Date.now() - connectionStartTime) / 1000) : 0;
     
@@ -191,7 +191,7 @@ app.get('/qrcode', (req, res) => {
 // GET /logs
 app.get('/logs', (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
-    const recentLogs = customLogs.slice(0, limit); // Pega do início (mais recentes)
+    const recentLogs = customLogs.slice(0, limit);
     
     res.json({
         logs: recentLogs
@@ -279,7 +279,6 @@ app.post('/restart', async (req, res) => {
         connectionStartTime = null;
         messagesSent = 0;
         
-        // Aguardar 2 segundos antes de reconectar
         setTimeout(async () => {
             await startWhatsAppClient();
         }, 2000);
