@@ -5,7 +5,13 @@
 @section('page-description', 'Gerencie logo e portfólio')
 
 @section('content')
-<div class="space-y-8" x-data="{ showNewCard: false, newImagePreview: null, logoPreview: null, heroPreview: null }">
+<div class="space-y-8" x-data="{ 
+        showNewCard: false, 
+        showNewProject: false,
+        newImagePreview: null, 
+        logoPreview: null, 
+        heroPreview: null 
+    }">
     
     <!-- Action Buttons -->
     <div class="flex gap-3 justify-end sticky top-0 bg-[hsl(60,30%,96%)] py-3 z-10">
@@ -99,6 +105,82 @@
             </div>
         </div>
     </form>
+
+    <!-- Projects Management -->
+    <div class="bg-white rounded-xl border border-[hsl(90,20%,85%)] p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display text-lg font-semibold text-[hsl(150,30%,15%)]">
+                Projetos
+            </h3>
+            <button 
+                @click="showNewProject = true"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[hsl(142,50%,35%)] text-[hsl(142,50%,35%)] hover:bg-[hsl(142,50%,35%)] hover:text-white transition-colors"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Novo Projeto
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            @foreach($projects as $project)
+            <div class="bg-[hsl(60,30%,96%)] rounded-lg border border-[hsl(90,20%,85%)] p-3">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="flex-1">
+                        <h4 class="font-medium text-sm">{{ $project->title }}</h4>
+                        @if($project->description)
+                            <p class="text-xs text-gray-500 mt-1">{{ $project->description }}</p>
+                        @endif
+                    </div>
+                    <form method="POST" action="{{ route('admin.gallery.destroyProject', $project->id) }}" onsubmit="return confirm('Deletar projeto e todas as imagens?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600 hover:bg-red-50 p-1 rounded">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+                <span class="text-xs text-gray-500">{{ DB::table('gallery_images')->where('project_id', $project->id)->count() }} fotos</span>
+            </div>
+            @endforeach
+
+            <!-- Add New Project Form -->
+            <div x-show="showNewProject" class="bg-[hsl(60,30%,96%)] rounded-lg border-2 border-dashed border-[hsl(142,50%,35%)] p-3">
+                <form method="POST" action="{{ route('admin.gallery.storeProject') }}">
+                    @csrf
+                    <div class="space-y-3">
+                        <input 
+                            type="text" 
+                            name="title"
+                            placeholder="Nome do projeto"
+                            required
+                            class="w-full px-2 py-1.5 text-sm rounded-lg border border-[hsl(90,20%,85%)] bg-white"
+                        >
+                        <select 
+                            name="service_id"
+                            class="w-full px-2 py-1.5 text-sm rounded-lg border border-[hsl(90,20%,85%)] bg-white"
+                        >
+                            <option value="">Categoria (opcional)</option>
+                            @foreach($services as $service)
+                                <option value="{{ $service->id }}">{{ $service->title }}</option>
+                            @endforeach
+                        </select>
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 px-3 py-1.5 text-sm rounded-lg bg-[hsl(142,50%,35%)] text-white">
+                                Criar
+                            </button>
+                            <button type="button" @click="showNewProject = false" class="px-3 py-1.5 text-sm rounded-lg border border-[hsl(90,20%,85%)] text-gray-600">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     
     <!-- Portfolio Images Grid -->
     <div class="bg-white rounded-xl border border-[hsl(90,20%,85%)] p-6">
@@ -156,15 +238,15 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Serviço</label>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Projeto</label>
                         <select 
-                            onchange="updateImage({{ $image->id }}, 'service_id', this.value)"
+                            onchange="updateImage({{ $image->id }}, 'project_id', this.value)"
                             class="w-full px-2 py-1.5 text-sm rounded-lg border border-[hsl(90,20%,85%)] bg-white text-[hsl(150,30%,15%)] focus:outline-none focus:ring-2 focus:ring-[hsl(142,50%,35%)]"
                         >
-                            <option value="">Sem categoria</option>
-                            @foreach($services as $service)
-                               <option value="{{ $service->id }}" {{ $image->service_id == $service->id ? 'selected' : '' }}>
-                                    {{ $service->title }}
+                            <option value="">Sem projeto</option>
+                            @foreach($projects as $project)
+                                <option value="{{ $project->id }}" {{ $image->project_id == $project->id ? 'selected' : '' }}>
+                                    {{ $project->title }}
                                 </option>
                             @endforeach
                         </select>
@@ -236,14 +318,14 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Serviço</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Projeto</label>
                             <select 
-                                name="service_id"
+                                name="project_id"
                                 class="w-full px-2 py-1.5 text-sm rounded-lg border border-[hsl(90,20%,85%)] bg-white text-[hsl(150,30%,15%)] focus:outline-none focus:ring-2 focus:ring-[hsl(142,50%,35%)]"
                             >
-                                <option value="">Sem categoria</option>
-                                @foreach($services as $service)
-                                    <option value="{{ $service->id }}">{{ $service->title }}</option>
+                                <option value="">Sem projeto</option>
+                                @foreach($projects as $project)
+                                    <option value="{{ $project->id }}">{{ $project->title }}</option>
                                 @endforeach
                             </select>
                         </div>

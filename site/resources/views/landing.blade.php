@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $settings['logo_text'] ?? 'RM Jardim' }} | Paisagismo e Jardinagem</title>
     <meta name="description" content="Serviços profissionais de jardinagem, paisagismo e manutenção de jardins.">
+
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -177,9 +179,9 @@
                 </p>
             </div>
 
-            @if(count($servicePortfolios) > 0)
+            @if(count($projectPortfolios) > 0)
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach($servicePortfolios as $index => $portfolio)
+                @foreach($projectPortfolios as $index => $portfolio)
                 <div class="group relative overflow-hidden rounded-2xl cursor-pointer animate-fade-up" 
                      style="animation-delay: {{ $index * 100 }}ms"
                      x-data="carousel{{ $index }}()"
@@ -207,7 +209,7 @@
                         <!-- Service Badge -->
                         <div class="absolute top-4 left-4">
                             <span class="inline-block px-3 py-1 rounded-full bg-[hsl(142,50%,35%)]/90 text-white text-xs font-medium backdrop-blur">
-                                {{ $portfolio['service']->title }}
+                                {{ $portfolio['project']->title }}
                             </span>
                         </div>
 
@@ -227,7 +229,7 @@
                             </h3>
                         </div>
 
-                        <!-- Navigation Buttons (only show if more than 1 image) -->
+                        <!-- Navigation Buttons -->
                         @if($portfolio['images']->count() > 1)
                         <button 
                             @click.stop="prev()"

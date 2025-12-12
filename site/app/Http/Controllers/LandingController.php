@@ -18,35 +18,40 @@ class LandingController extends Controller
             ->orderBy('order', 'asc')
             ->get();
         
-        // Agrupar imagens por serviço
-        $servicePortfolios = [];
-        foreach ($services as $service) {
+        $projectPortfolios = [];
+        
+        $projects = DB::table('projects')
+            ->where('is_active', true)
+            ->orderBy('order', 'asc')
+            ->get();
+        
+        foreach ($projects as $project) {
             $images = DB::table('gallery_images')
-                ->where('service_id', $service->id)
+                ->where('project_id', $project->id)
                 ->orderBy('order', 'asc')
                 ->get();
             
             if ($images->count() > 0) {
-                $servicePortfolios[] = [
-                    'service' => $service,
+                $projectPortfolios[] = [
+                    'project' => $project,
                     'images' => $images
                 ];
             }
         }
         
-        // Imagens sem categoria
+        // Imagens sem projeto
         $uncategorizedImages = DB::table('gallery_images')
-            ->whereNull('service_id')
+            ->whereNull('project_id')
             ->orderBy('order', 'asc')
             ->get();
         
         if ($uncategorizedImages->count() > 0) {
-            $servicePortfolios[] = [
-                'service' => (object) ['title' => 'Outros Trabalhos'],
+            $projectPortfolios[] = [
+                'project' => (object) ['title' => 'Outros Trabalhos'],
                 'images' => $uncategorizedImages
             ];
         }
         
-        return view('landing', compact('settings', 'services', 'servicePortfolios'));
+        return view('landing', compact('settings', 'services', 'projectPortfolios'));
     }
 }
