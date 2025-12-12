@@ -6,6 +6,16 @@
     <title>{{ $settings['logo_text'] ?? 'RM Jardim' }} | Paisagismo e Jardinagem</title>
     <meta name="description" content="Serviços profissionais de jardinagem, paisagismo e manutenção de jardins.">
 
+	<!-- Open Graph -->
+	<meta property="og:title" content="RM Jardim SP - Serviços de Jardinagem Profissional">
+	<meta property="og:description" content="Manutenção, poda, limpeza e revitalização de jardins. Solicite seu orçamento e atendimento rápido pelo WhatsApp.">
+	<meta property="og:image" content="https://rmjardimsp.com.br/og-image.jpg">
+	<meta property="og:url" content="https://rmjardimsp.com.br/">
+	<meta property="og:type" content="website">
+
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     
     <!-- Google Fonts -->
