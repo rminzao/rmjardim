@@ -5,25 +5,20 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
+use App\Helpers\WhatsAppHelper;
 
 class WebhookController extends Controller
 {
     public function handle(Request $request)
     {
-        Log::info('Webhook recebido', $request->all());
-
         try {
-            // Extrair dados da mensagem
-            $from = $request->input('from'); // Número que enviou
-            $body = $request->input('body'); // Texto da mensagem
+            $from = $request->input('from');
+            $body = $request->input('body');
             
-            // Número do admin (buscar do banco)
             $adminNumber = DB::table('site_settings')
                 ->where('key', 'whatsapp_notification')
                 ->value('value');
             
-            // Formatar número do admin (remover tudo que não é número)
             $adminNumberClean = preg_replace('/[^0-9]/', '', $adminNumber);
             if (!str_starts_with($adminNumberClean, '55')) {
                 $adminNumberClean = '55' . $adminNumberClean;
@@ -62,7 +57,7 @@ class WebhookController extends Controller
         }
         
         $comando = strtolower($matches[1]); // contratado
-        $dias = (int)$matches[2]; // 30
+        $dias = (int)$matches[2];
         $uniqueId = strtoupper($matches[3]); // A7K9P2
         
         Log::info('Comando processado', [
@@ -133,8 +128,6 @@ class WebhookController extends Controller
                 'updated_at' => now(),
             ]);
         
-        Log::info('Cliente cancelado', ['unique_id' => $uniqueId]);
-        
         // Enviar confirmação para o admin
         $message = "🚫 *Cliente #{$uniqueId} cancelado!*\n\n"
             . "👤 Nome: {$client->name}\n"
@@ -147,28 +140,10 @@ class WebhookController extends Controller
     
     private function sendWhatsAppToAdmin($message)
     {
-        try {
-            $apiUrl = config('services.wppconnect.url');
-            
-            // Buscar número do admin
-            $whatsappNumber = DB::table('site_settings')
-                ->where('key', 'whatsapp_notification')
-                ->value('value');
-            
-            // Formatar número
-            $phone = preg_replace('/[^0-9]/', '', $whatsappNumber);
-            if (strlen($phone) === 11 || strlen($phone) === 10) {
-                $phone = '55' . $phone;
-            }
-            $phone = $phone . '@c.us';
-            
-            Http::timeout(10)->post("{$apiUrl}/send-message", [
-                'phone' => $phone,
-                'message' => $message,
-            ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Erro ao enviar WhatsApp para admin: ' . $e->getMessage());
-        }
+        $whatsappNumber = DB::table('site_settings')
+            ->where('key', 'whatsapp_notification')
+            ->value('value');
+        
+        WhatsAppHelper::sendMessage($whatsappNumber, $message);
     }
 }
